@@ -8,9 +8,6 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
   # probs: standard deviation of readings for salinity, phosphate and nitrogen respectively at each waterhole
   
   print(readings)
-  sal = readings[1]
-  pho = readings[2]
-  nit = readings[3]
   
   matches = list(sal = c(), pho = c(), nit = c())
   for (i in 1:3) {
