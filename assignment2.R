@@ -12,8 +12,9 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
     moveInfo$mem[[3]] = list(rep(c(1/40), each = 40))
   }
   
-  # Create transition matrix and F0
+  # Create transition matrix, path matrix and F0
   if (length(moveInfo$mem) == 1) {
+    # Create transition matrix
     trans_mat = matrix(0, 40, 40)
     for (node in 1:40){
       neighbor = c()
@@ -31,7 +32,15 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
       trans_mat[node, node] = prob
     }
     moveInfo$mem[[2]] = trans_mat
+    
+    # Create F0
     moveInfo$mem[[3]] = list(rep(c(1/40), each = 40))
+    
+    # Create path matrix
+    moveInfo$mem[[4]] = list()
+    for (i in 1:40){
+      moveInfo$mem[[4]][[i]] = rep(list(NA), each = 40)
+    }
   }
   
   
@@ -61,7 +70,15 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
   moveInfo$mem[[3]][[length(moveInfo$mem[[3]])+1]] = F_vec
   goal = which.max(F_vec)
   
-  path = path_finder(goal, positions[[3]], edges)
+  path = NA
+  
+  if (length(moveInfo$mem[[4]][[positions[[3]]]][[goal]])==1){
+    path = path_finder(goal, positions[[3]], edges)
+    moveInfo$mem[[4]][[positions[[3]]]][[goal]] = path
+  } else {
+    path = moveInfo$mem[[4]][[positions[[3]]]][[goal]]
+  }
+  
   if (length(path) == 2){
     moveInfo$moves = c(0, 0)
   } else {
