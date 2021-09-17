@@ -7,6 +7,11 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
   # edges: two column matrix giving the edges paths between waterholes (edges) present (the numbers are from and to numbers for the waterholes)
   # probs: standard deviation of readings for salinity, phosphate and nitrogen respectively at each waterhole
   
+  if (moveInfo$mem$status == 1) {
+    moveInfo$mem$status = 0
+    moveInfo$mem[[3]] = list(rep(c(1/40), each = 40))
+  }
+  
   # Create transition matrix and F0
   if (length(moveInfo$mem) == 1) {
     trans_mat = matrix(0, 40, 40)
