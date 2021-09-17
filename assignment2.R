@@ -7,23 +7,7 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
   # edges: two column matrix giving the edges paths between waterholes (edges) present (the numbers are from and to numbers for the waterholes)
   # probs: standard deviation of readings for salinity, phosphate and nitrogen respectively at each waterhole
   
-  print(readings)
-  
-  matches = list(sal = c(), pho = c(), nit = c())
-  for (i in 1:3) {
-    for (j in 1:nrow(probs[[1]])){
-      if (readings[i] > probs[[i]][j, 1]-probs[[i]][j, 2] & readings[i] < probs[[i]][j, 1]+probs[[i]][j, 2]){
-        matches[[i]] = append(matches[[i]], j)
-      }
-    }
-  }
-  print(probs)
-  print(matches)
-  print(edges)
-  print(path_finder(15, positions[3], c(), edges, c()))
-  print('mem')
-  print(length(moveInfo$mem))
-  
+  # Create transition matrix and F0
   if (length(moveInfo$mem) == 1) {
     trans_mat = matrix(0, 40, 40)
     for (node in 1:40){
@@ -41,18 +25,51 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
       }
       trans_mat[node, node] = prob
     }
-    print(trans_mat)
     moveInfo$mem[[2]] = trans_mat
+    moveInfo$mem[[3]] = list(rep(c(1/40), each = 40))
   }
-  print('mem')
-  print(moveInfo$mem)
   
   
+  Ot_mat = emission_finder(readings, probs)
+  T_mat = moveInfo$mem[[2]]
+  F_prev = moveInfo$mem[[3]][[length(moveInfo$mem[[3]])]]
+  
+  # If previous move was searched
+  if (length(moveInfo$moves) != 0) {
+    if (moveInfo$moves[2] == 0){
+      F_prev[positions[3]] = 0
+    }
+  }
+  
+  F_vec = F_prev %*% T_mat %*% Ot_mat
+  
+  for (i in 1:2){
+    if (is.na(positions[[i]])){
+      break
+    } else if (positions[[i]] < 0){
+      F_vec[-positions[[i]]] = 1
+    } else {
+      F_vec[positions[[i]]] = 0
+    }
+  }
+  
+  moveInfo$mem[[3]][[length(moveInfo$mem[[3]])+1]] = F_vec
+  goal = which.max(F_vec)
+  
+  path = path_finder(goal, positions[[3]], edges)
+  if (length(path) == 2){
+    moveInfo$moves = c(0, 0)
+  } else {
+    moveInfo$moves = path[2:3]
+  }
+  return (moveInfo)
 }
 
-path_finder <- function(goal, position, visited, edges, path){
+
+path_finder <- function(goal, position, edges){
   frontier = list()
   visited = c()
+  path = c()
   expand = list()
   first_pos = list(pos=position, path=c())
   frontier = append(frontier, list(first_pos))
@@ -61,6 +78,8 @@ path_finder <- function(goal, position, visited, edges, path){
     visited = append(visited, expand$pos)
     frontier = frontier[-1]
     if (expand$pos == goal) {
+      expand$path = append(expand$path, goal)
+      expand$path = append(expand$path, 0)
       return (expand$path)
     } else {
       for (i in 1:2){
@@ -73,26 +92,15 @@ path_finder <- function(goal, position, visited, edges, path){
       }
     }
   }
-  
-  
-  # print(cat('position', position))
-  # path = append(path, position)
-  # neighbors <- c()
-  # visited = append(visited, position)
-  # for (i in 1:2){
-  #   for (j in 1:nrow(edges)){
-  #     if (edges[j, i] == position){
-  #       neighbors = append(neighbors, edges[j,-i])
-  #     }
-  #   }
-  # }
-  # for (i in 1:length(neighbors)){
-  #   if (!(neighbors[i] %in% visited)) {
-  #     if (neighbors[i] == goal){
-  #       return (path)
-  #     } else {
-  #       return (path_finder(goal, neighbors[i], visited, edges, path))
-  #     }
-  #   }
-  # }
+}
+
+
+emission_finder <- function(readings, probs) {
+  emi_mat = matrix(0, 40, 40)
+  for (i in 1:40){
+    i_value = dnorm(readings[1], probs$salinity[i,1], probs$salinity[i,2])*dnorm(readings[2], 
+              probs$phosphate[i,1], probs$phosphate[i,2])*dnorm(readings[3], probs$nitrogen[i,1], probs$nitrogen[i,2])
+    emi_mat[i,i] = i_value
+  }
+  return (emi_mat)
 }
