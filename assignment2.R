@@ -74,7 +74,10 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
   
   if (length(moveInfo$mem[[4]][[positions[[3]]]][[goal]])==1){
     path = path_finder(goal, positions[[3]], edges)
-    moveInfo$mem[[4]][[positions[[3]]]][[goal]] = path
+    #moveInfo$mem[[4]][[positions[[3]]]][[goal]] = path
+    for (i in 1:(length(path)-1)){
+      moveInfo$mem[[4]][[path[i]]][[goal]] = path[i:length(path)]
+    }
   } else {
     path = moveInfo$mem[[4]][[positions[[3]]]][[goal]]
   }
