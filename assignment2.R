@@ -1,12 +1,7 @@
 library(WheresCroc)
 
 myFunction <- function(moveInfo, readings, positions, edges, probs){
-  # move_info:  A list of information for the move. This has two fields: moves and mem
-  # readings: A vector giving the salinity, phosphate and nitrogen reading from Croc sensors at his current location.
-  # positions: A vector giving the positions of the two tourists (elements 1 and 2) and yourself (element 3).
-  # edges: two column matrix giving the edges paths between waterholes (edges) present (the numbers are from and to numbers for the waterholes)
-  # probs: standard deviation of readings for salinity, phosphate and nitrogen respectively at each waterhole
-  
+ 
   if (moveInfo$mem$status == 1) {
     moveInfo$mem$status = 0
     moveInfo$mem[[3]] = list(rep(c(1/40), each = 40))
@@ -43,7 +38,7 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
     }
   }
   
-  
+  # Defining matrices for matrix multiplication
   Ot_mat = emission_finder(readings, probs)
   T_mat = moveInfo$mem[[2]]
   F_prev = moveInfo$mem[[3]][[length(moveInfo$mem[[3]])]]
@@ -55,8 +50,10 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
     }
   }
   
+  # Matrix Based Calculation of Forward Values
   F_vec = F_prev %*% T_mat %*% Ot_mat
   
+  # Locate backpackers
   for (i in 1:2){
     if (is.na(positions[[i]])){
       break
@@ -67,14 +64,15 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
     }
   }
   
+  # Store vector in memory and choose likeliest pond
   moveInfo$mem[[3]][[length(moveInfo$mem[[3]])+1]] = F_vec
   goal = which.max(F_vec)
   
+  # Find path to goal and put inpath matrix if not existing
   path = NA
   
   if (length(moveInfo$mem[[4]][[positions[[3]]]][[goal]])==1){
     path = path_finder(goal, positions[[3]], edges)
-    #moveInfo$mem[[4]][[positions[[3]]]][[goal]] = path
     for (i in 1:(length(path)-1)){
       moveInfo$mem[[4]][[path[i]]][[goal]] = path[i:length(path)]
     }
@@ -90,7 +88,7 @@ myFunction <- function(moveInfo, readings, positions, edges, probs){
   return (moveInfo)
 }
 
-
+# function for finding best path using breath first search
 path_finder <- function(goal, position, edges){
   frontier = list()
   visited = c()
@@ -119,7 +117,7 @@ path_finder <- function(goal, position, edges){
   }
 }
 
-
+# Find probabilities of emission for a pond using data from croc
 emission_finder <- function(readings, probs) {
   emi_mat = matrix(0, 40, 40)
   for (i in 1:40){
